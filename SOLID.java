@@ -6,99 +6,211 @@ import java.util.*;
  */
 public class SOLID {
 
-    // ============================================================
-    // S - Single Responsibility Principle (SRP)
-    // Fehler: Eine Klasse macht alles (Logik + Persistenz + E-Mail).
-    // Fix: Trennung der Zuständigkeiten.
-    // ============================================================
-    static class UserSettings {
-        // Gut: Nur für Benutzerdaten zuständig
-        void changePassword(String pass) { System.out.println("Passwort geändert"); }
-        
-        // FALSCH: Würde diese Klasse auch die DB speichern oder E-Mails senden,
-        // müsste sie bei jeder DB-Änderung angepasst werden.
-    }
-
-    // ============================================================
-    // O - Open/Closed Principle (OCP)
-    // Fehler: "if-else" oder "switch" für jeden neuen Typ (muss bei Erweiterung geändert werden).
-    // Fix: Interfaces nutzen. Offen für neue Klassen, geschlossen für Code-Änderung im Kern.
-    // ============================================================
-    interface Shape { double area(); }
-
-    static class Rectangle implements Shape {
-        double w, h;
-        public double area() { return w * h; }
-    }
-
-    static class Circle implements Shape {
-        double r;
-        public double area() { return Math.PI * r * r; }
-    }
-    // Erklärung: Neue Formen können hinzugefügt werden, ohne die Flächenberechnungs-Logik zu ändern.
-
-    // ============================================================
-    // L - Liskov Substitution Principle (LSP)
-    // Fehler: Eine Unterklasse bricht das Verhalten der Oberklasse (z.B. ein Pinguin, der fliegen soll).
-    // Fix: Unterklassen müssen sich so verhalten, dass sie die Oberklasse ohne Fehler ersetzen können.
-    // ============================================================
-    static abstract class Vogel { abstract void fressen(); }
-    static abstract class FlugVogel extends Vogel { abstract void fliegen(); }
-
-    static class Adler extends FlugVogel {
-        void fressen() { System.out.println("Adler frisst"); }
-        void fliegen() { System.out.println("Adler fliegt"); }
-    }
-    
-    static class Pinguin extends Vogel {
-        void fressen() { System.out.println("Pinguin frisst"); }
-        // Erbt nicht von FlugVogel, daher kein Absturz beim Aufruf von fliegen().
-    }
-
-    // ============================================================
-    // I - Interface Segregation Principle (ISP)
-    // Fehler: Ein Riesen-Interface zwingt Klassen, Methoden zu implementieren, die sie nicht brauchen.
-    // Fix: Viele kleine, spezifische Interfaces.
-    // ============================================================
-    interface Druckbar { void drucken(); }
-    interface Scannbar { void scannen(); }
-
-    static class NurDrucker implements Druckbar {
-        public void drucken() { System.out.println("Drucke..."); }
-        // Muss nicht scannen() implementieren!
-    }
-
-    // ============================================================
-    // D - Dependency Inversion Principle (DIP)
-    // Fehler: Eine High-Level Klasse hängt direkt von einer Low-Level Klasse ab (harte Kopplung).
-    // Fix: Beide hängen von einer Abstraktion (Interface) ab.
-    // ============================================================
-    interface Tastatur { void tippen(); }
-
-    static class MechanischeTastatur implements Tastatur {
-        public void tippen() { System.out.println("Klick-Klack"); }
-    }
-
-    static class Computer {
-        private final Tastatur tastatur; // Hängt vom Interface ab, nicht vom Modell!
-        
-        Computer(Tastatur t) { this.tastatur = t; }
-        
-        void nutzen() { tastatur.tippen(); }
-    }
-
     public static void main(String[] args) {
-        // DRY - Don't Repeat Yourself
-        // Beispiel: Statt Code zu kopieren, nutzen wir Methoden oder Hilfsklassen.
-        System.out.println("SOLID Prinzipien Demonstration");
-        
-        // DIP Beispiel
-        Tastatur meineTastatur = new MechanischeTastatur();
-        Computer meinPC = new Computer(meineTastatur);
-        meinPC.nutzen();
-        
-        // OCP Beispiel
-        List<Shape> shapes = Arrays.asList(new Rectangle(), new Circle());
-        // Hier könnte man einfach durchschleifen, egal welche Form.
+
     }
 }
+
+/**
+ * S - Single Responsibility Principle (SRP)
+ * Eine klasse -> ein Grund zu ändern
+ * Eine Klasse -> ein Job
+ */
+
+// WRONG
+// viele Aufgaben: DB speicheirn, Email schicken, report generien => schwierige
+// wartbarkeit
+class _UserService {
+    public void saveUser(User user) {
+        // Save database
+    }
+
+    public void sendEmail(User user) {
+        // Send email
+    }
+
+    public void generateReport() {
+        // export pdf
+    }
+}
+
+// CORRECT
+class UserService {
+    public void saveUser(User user) {
+        // save DB
+    }
+}
+
+class EmailService {
+    public void saveEmail(User user) {
+        // send Email
+    }
+}
+
+class ReportService {
+    public void generateReport() {
+        // export pdf
+    }
+}
+
+/**********************************/
+
+/**
+ * O - Open/Closed Principle (OCP)
+ * Open: erweiterung // Closed: implementierung
+ * -> neue Feature ohne alte code änderung
+ * E.g Framework plugins
+ */
+
+// WRONG
+// Neue Payment methode -> Klasse ändern
+class _PaymentService {
+    public void pay(String type) {
+        if (type.equals("PAYPAL")) {
+            System.out.println("Paypal");
+        }
+
+        if (type.equals("VISA")) {
+            System.out.println("Visa");
+        }
+    }
+}
+
+// CORRECT
+interface PaymentMethod {
+    void pay();
+}
+
+class PaypalPayment implements PaymentMethod {
+    @Override
+    public void pay() {
+        System.out.println("Paypal");
+    }
+}
+
+class VisaPayment implements PaymentMethod {
+    @Override
+    public void pay() {
+        System.out.println("Visa");
+    }
+}
+
+class PaymentService {
+    public void process(PaymentMethod paymentMethod) {
+        paymentMethod.pay();
+    }
+}
+
+// USAGE:
+PaymentService paymentService = new PaymentService();
+paymentService.process(new VisaPayment());
+
+// Neue Methode
+// PaymentService: keine Änderung
+class CryptoPayment implements PaymentMethod {
+    public void pay() {
+        System.out.println("Crypto");
+    }
+}
+/**********************************/
+
+/**
+ * L - Liskov Substitution Principle (LSP)
+ * - Child Klasse muss Elternklasse ohne Problem ersezten
+ * - Child muss desselbe verhalten wie Eltern
+ */
+
+//WRONG
+// Penguin: nicht fliegen
+class _Bird {
+    void fly() {}
+}
+class _Penguin extends _Bird {
+    void fly() {
+        throw new UnsupportedOperationException();
+    }
+}
+
+// CORRECT
+interface Bird {}
+interface FlyingBird extends Bird {
+    void fly() {};
+}
+
+class Eagle implements FlyingBird {
+    public void fly() {}
+}
+
+class Penguin implements Bird {}
+
+/**********************************/
+/**
+ * I - Interface Segregation Principle (ISP)
+ * Klasse: nicht gezwungen, unnötige Funktionen zu implementieren
+ * kleine + gezielte Interfaces
+ */
+
+// WRONG
+interface _Worker {
+    void work();
+    void eat();
+}
+// Robot: kein Eat()
+class _RobotWorker implements _Worker{
+    public void work() {}
+    public void eat() {
+        throw new UnsupportedOperationException();
+    }
+}
+
+// CORRECT
+interface Workable {
+    void work();
+}
+interface Eatable {
+    void eat();
+}
+
+class Human implements Workable, Eatable {
+    public void work() {}
+    public void eat() {}
+}
+class RobotWorker implements Workable {
+    public void work() {}
+}
+
+/**********************************/
+/**
+ * D - Dependency Inversion Principle (DIP)
+ * High-level module: konkrete Klasse unabhängig & abstraktion/interface abhängig
+ */
+
+// WRONG
+// PosgresSQL Ändern
+// Mock test
+class _MySQLDatabase {
+    void connect() {}
+}
+class _UserService {
+    private _MySQLDatabase db = new _MySQLDatabase();
+}
+
+// CORRECT
+interface Database {
+    void connect();
+}
+
+class MySQLDatabase implements Database {
+    public void connect() {}
+}
+
+class UserService {
+    private Database db;
+    public UserService(Database db) {
+        this.db = db;
+    }
+}
+
+// USAGE
+UserService userService = new UserService(new MySQLDatabase());
+userService.connect();
